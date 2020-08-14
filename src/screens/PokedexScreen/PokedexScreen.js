@@ -5,13 +5,12 @@ import { firebase } from '../../firebase/config'
 import { firestore } from 'firebase';
 
 
-
-
 export default class PokedexScreen extends Component {
   constructor (props) {
     super(props)
     this.state = {
       pokemon: [],
+      renderedPokemon: [],
       user: this.props.extraData,
       caught: {}
     }
@@ -19,6 +18,12 @@ export default class PokedexScreen extends Component {
     this.sortByName = this.sortByName.bind(this);
     this.setCaught = this.setCaught.bind(this);
     this.handleCatch = this.handleCatch.bind(this)
+    this.search = this.search.bind(this)
+  }
+
+  componentDidMount () {
+    this.sortByNum()
+    this.setCaught()
   }
 
   async sortByNum () {
@@ -33,6 +38,7 @@ export default class PokedexScreen extends Component {
             newPokemon.push(pokemon)
           });
           this.setState({pokemon: newPokemon})
+          this.setState({renderedPokemon: newPokemon})
         },
         error => {
           console.log(error)
@@ -52,7 +58,7 @@ export default class PokedexScreen extends Component {
             newPokemon.push(pokemon)
             console.log(newPokemon)
           });
-          this.setState({pokemon: newPokemon})
+          this.setState({renderedPokemon: newPokemon})
         },
         error => {
           console.log(error)
@@ -79,16 +85,16 @@ export default class PokedexScreen extends Component {
     if (this.state.caught[pokemon]) {
       const data = {[pokemon]: false}
       firebase.firestore().collection('users').doc(this.state.user.id)
-      .collection('pokemon')
-      .doc('standard')
-      .set(data, {merge: true})
+        .collection('pokemon')
+        .doc('standard')
+        .set(data, {merge: true})
     }
     else {
       const data = {[pokemon]: true}
       firebase.firestore().collection('users').doc(this.state.user.id)
-      .collection('pokemon')
-      .doc('standard')
-      .set(data, {merge: true})
+        .collection('pokemon')
+        .doc('standard')
+        .set(data, {merge: true})
     }
   }
 
@@ -101,13 +107,20 @@ export default class PokedexScreen extends Component {
     }
   }
 
-  componentDidMount () {
-    this.sortByNum()
-    this.setCaught()
+  search (text) {
+    text = text.toLowerCase()
+    const render = []
+    this.state.pokemon.map(pokemon =>{
+      const name = pokemon.name.toLowerCase()
+      if (name.startsWith(text)) {
+        render.push(pokemon)
+      }
+    })
+    this.setState({renderedPokemon: render})
   }
 
   render () {
-    const pokemon = this.state.pokemon
+    const pokemon = this.state.renderedPokemon
     return (
       <View style={{flex:1}}>
         <Button
@@ -120,7 +133,6 @@ export default class PokedexScreen extends Component {
           title='Sort by Number'
           style={styles.buttonRight}
         />
-
         <ScrollView>
           <View style={styles.entityContainer}>
             {pokemon.map(pokemon => {
@@ -137,46 +149,15 @@ export default class PokedexScreen extends Component {
             })}
           </View>
         </ScrollView>
+        <TextInput
+          // style={styles.input}
+          placeholder='Search by Name'
+          placeholderTextColor="#aaaaaa"
+          onChangeText={(text) => this.search(text)}
+          // value={entityText}
+          underlineColorAndroid="transparent"
+          autoCapitalize="none"
+        />
       </View>
     )}
 }
-
-
-
-
-
-
-
-// export default function PokedexScreen(props) {
-
-//   const [pokemon, setPokemon] = useState([])
-
-//   const pokemonRef = firebase.firestore().collection('pokemon')
-//   // const pokemon = await pokemonRef.get();
-
-
-//   useEffect(() => {
-//     pokemonRef
-//       .onSnapshot(
-//         querySnapshot => {
-//           const newPokemon = []
-//           querySnapshot.forEach(doc => {
-//             const pokemon = doc.data()
-//             newPokemon.push(pokemon)
-//           });
-//           setPokemon(newPokemon)
-//         },
-//         error => {
-//           console.log(error)
-//         }
-//       )
-//   }, [])
-
-
-
-//   return (
-//     <View><Text>hello</Text></View>
-
-//   )
-
-// }

@@ -63,7 +63,7 @@ export default StyleSheet.create({
     marginTop: 16,
     borderBottomColor: '#cccccc',
     borderBottomWidth: 1,
-    paddingBottom: 16
+    paddingBottom: 16,
   },
   caughtContainer: {
     backgroundColor: 'red',
