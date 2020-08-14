@@ -1,5 +1,5 @@
 import React, { useEffect, useState, Component } from 'react'
-import { FlatList, Keyboard, Text, TextInput, TouchableOpacity, View, Image, ScrollView } from 'react-native'
+import { FlatList, Keyboard, Text, TextInput, TouchableOpacity, View, Image, ScrollView, Button } from 'react-native'
 import styles from './styles';
 import { firebase } from '../../firebase/config'
 import { firestore } from 'firebase';
@@ -8,18 +8,41 @@ import { firestore } from 'firebase';
 
 
 export default class PokedexScreen extends Component {
-
-  constructor () {
-    super()
+  constructor (props) {
+    super(props)
     this.state = {
-      pokemon: []
+      pokemon: [],
+      user: this.props.extraData,
+      caught: {}
     }
+    this.sortByNum = this.sortByNum.bind(this);
+    this.sortByName = this.sortByName.bind(this);
+    this.setCaught = this.setCaught.bind(this);
+    this.handleCatch = this.handleCatch.bind(this)
   }
 
-  async componentDidMount () {
-    var storage = firebase.storage()
+  async sortByNum () {
     const pokemonRef = firebase.firestore().collection('pokemon')
     const pokemon = await pokemonRef.orderBy('number');
+    pokemon
+      .onSnapshot(
+        querySnapshot => {
+          const newPokemon = []
+          querySnapshot.forEach(doc => {
+            const pokemon = doc.data()
+            newPokemon.push(pokemon)
+          });
+          this.setState({pokemon: newPokemon})
+        },
+        error => {
+          console.log(error)
+        }
+      )
+  }
+
+  async sortByName () {
+    const pokemonRef = firebase.firestore().collection('pokemon')
+    const pokemon = await pokemonRef.orderBy('name');
     pokemon
       .onSnapshot(
         querySnapshot => {
@@ -37,27 +60,85 @@ export default class PokedexScreen extends Component {
       )
   }
 
+  async setCaught(pokeNum) {
+    const pokeRef = firebase.firestore().collection('users').doc(this.state.user.id)
+      .collection('pokemon')
+      .doc('standard')
+    const pokemon = await pokeRef
+    pokemon
+      .onSnapshot(
+        querySnapshot => {
+          this.setState({caught: querySnapshot.data()})
+        }
+      )
+  }
+
+  async handleCatch (pokemon) {
+    console.log('you caught it')
+    pokemon = pokemon.toLowerCase()
+    if (this.state.caught[pokemon]) {
+      const data = {[pokemon]: false}
+      firebase.firestore().collection('users').doc(this.state.user.id)
+      .collection('pokemon')
+      .doc('standard')
+      .set(data, {merge: true})
+    }
+    else {
+      const data = {[pokemon]: true}
+      firebase.firestore().collection('users').doc(this.state.user.id)
+      .collection('pokemon')
+      .doc('standard')
+      .set(data, {merge: true})
+    }
+  }
+
+  styleMe (pokemon) {
+    pokemon = pokemon.toLowerCase()
+    if (this.state.caught[pokemon]) {
+      return styles.caughtContainer
+    } else {
+      return styles.uncaughtContainer
+    }
+  }
+
+  componentDidMount () {
+    this.sortByNum()
+    this.setCaught()
+  }
+
   render () {
-
     const pokemon = this.state.pokemon
-
     return (
-      <ScrollView>
-        <View style={styles.entityContainer}>
-          {pokemon.map(pokemon => {
-            return (
-              <View key={pokemon.number} style={styles.entityContainer}>
-                <Text style={styles.entityText}>No. {pokemon.number}</Text>
-                <Text style={styles.entityText}>{pokemon.name}</Text>
-                <Image source={{uri: pokemon.image}}
-                  style={{width:50, height: 50}}/>
-              </View>
-            )
-          })}
-        </View>
-      </ScrollView>
-    )}
+      <View style={{flex:1}}>
+        <Button
+          onPress={this.sortByName}
+          title='Sort By Name'
+          style={styles.buttonLeft}
+        />
+        <Button
+          onPress={this.sortByNum}
+          title='Sort by Number'
+          style={styles.buttonRight}
+        />
 
+        <ScrollView>
+          <View style={styles.entityContainer}>
+            {pokemon.map(pokemon => {
+              return (
+                <TouchableOpacity key={pokemon.number}
+                  style={this.styleMe(pokemon.name)}
+                  onPress={()=> this.handleCatch(pokemon.name)}>
+                  <Text style={styles.entityText}>No. {pokemon.number}</Text>
+                  <Text style={styles.entityText}>{pokemon.name}</Text>
+                  <Image source={{uri: pokemon.image}}
+                    style={{width:50, height: 50}}/>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    )}
 }
 
 
