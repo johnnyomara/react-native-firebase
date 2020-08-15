@@ -5,6 +5,8 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { LoginScreen, HomeScreen, RegistrationScreen, PokedexScreen } from './src/screens'
 import {decode, encode} from 'base-64'
+import store from './src/store'
+import {Provider} from 'react-redux'
 if (!global.btoa) {  global.btoa = encode }
 if (!global.atob) { global.atob = decode }
 
@@ -43,6 +45,7 @@ export default function App() {
   }
 
   return (
+    <Provider store={store}>
     <NavigationContainer>
       <Stack.Navigator>
         { user ? (
@@ -61,5 +64,8 @@ export default function App() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </Provider>
   );
 }
+
+

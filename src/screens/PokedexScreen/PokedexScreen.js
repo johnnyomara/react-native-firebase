@@ -1,106 +1,65 @@
 import React, { useEffect, useState, Component } from 'react'
-import { FlatList, Keyboard, Text, TextInput, TouchableOpacity, View, Image, ScrollView, Button } from 'react-native'
+import { FlatList, Keyboard, Text, TextInput, TouchableOpacity, View, Image, ScrollView, Button, ActivityIndicator } from 'react-native'
 import styles from './styles';
 import { firebase } from '../../firebase/config'
 import { firestore } from 'firebase';
+import { connect } from 'react-redux'
+import { getPokemon, getCaught } from '../../store/pokemon'
 
-
-export default class PokedexScreen extends Component {
+export class PokedexScreen extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      pokemon: [],
+      // pokemon: [],
       renderedPokemon: [],
-      user: this.props.extraData,
-      caught: {}
+      user: this.props.extraData
     }
-    this.sortByNum = this.sortByNum.bind(this);
     this.sortByName = this.sortByName.bind(this);
-    this.setCaught = this.setCaught.bind(this);
     this.handleCatch = this.handleCatch.bind(this)
     this.search = this.search.bind(this)
   }
 
   componentDidMount () {
-    this.sortByNum()
-    this.setCaught()
+    this.props.fetchPokemon()
+    setTimeout(() => {
+      this.sortByNum();
+    }, 1000);
+    this.props.fetchCaught(this.state.user.id)
   }
 
-  async sortByNum () {
-    const pokemonRef = firebase.firestore().collection('pokemon')
-    const pokemon = await pokemonRef.orderBy('number');
-    pokemon
-      .onSnapshot(
-        querySnapshot => {
-          const newPokemon = []
-          querySnapshot.forEach(doc => {
-            const pokemon = doc.data()
-            newPokemon.push(pokemon)
-          });
-          this.setState({pokemon: newPokemon})
-          this.setState({renderedPokemon: newPokemon})
-        },
-        error => {
-          console.log(error)
-        }
-      )
+  sortByNum () {
+    const pokemon = this.props.pokemon.pokemon
+    const sorted = pokemon.sort((a, b) => (a.number > b.number) ? 1 : -1)
+    this.setState({renderedPokemon: sorted})
   }
 
-  async sortByName () {
-    const pokemonRef = firebase.firestore().collection('pokemon')
-    const pokemon = await pokemonRef.orderBy('name');
-    pokemon
-      .onSnapshot(
-        querySnapshot => {
-          const newPokemon = []
-          querySnapshot.forEach(doc => {
-            const pokemon = doc.data()
-            newPokemon.push(pokemon)
-            console.log(newPokemon)
-          });
-          this.setState({renderedPokemon: newPokemon})
-        },
-        error => {
-          console.log(error)
-        }
-      )
-  }
-
-  async setCaught(pokeNum) {
-    const pokeRef = firebase.firestore().collection('users').doc(this.state.user.id)
-      .collection('pokemon')
-      .doc('standard')
-    const pokemon = await pokeRef
-    pokemon
-      .onSnapshot(
-        querySnapshot => {
-          this.setState({caught: querySnapshot.data()})
-        }
-      )
+  sortByName () {
+    const pokemon = this.props.pokemon.pokemon
+    const sorted = pokemon.sort((a, b) => (a.name > b.name) ? 1 : -1)
+    this.setState({renderedPokemon: sorted})
   }
 
   async handleCatch (pokemon) {
     console.log('you caught it')
     pokemon = pokemon.toLowerCase()
-    if (this.state.caught[pokemon]) {
-      const data = {[pokemon]: false}
-      firebase.firestore().collection('users').doc(this.state.user.id)
-        .collection('pokemon')
-        .doc('standard')
-        .set(data, {merge: true})
+    if (this.props.pokemon.caught[pokemon]) {
+      console.log('its true')
+      const data = {caught: {[pokemon]: false}}
+      const pokeRef = firebase.firestore().collection('users').doc(this.state.user.id)
+      await pokeRef.set(data, {merge: true})
     }
     else {
-      const data = {[pokemon]: true}
-      firebase.firestore().collection('users').doc(this.state.user.id)
-        .collection('pokemon')
-        .doc('standard')
-        .set(data, {merge: true})
+      const data = {caught: {[pokemon]: true}}
+      console.log('its false')
+      const pokeRef = firebase.firestore().collection('users').doc(this.state.user.id)
+      await pokeRef.set(data, {merge: true})
     }
+    this.props.fetchCaught(this.state.user.id)
   }
 
   styleMe (pokemon) {
     pokemon = pokemon.toLowerCase()
-    if (this.state.caught[pokemon]) {
+    if (this.props.pokemon.caught[pokemon]) {
       return styles.caughtContainer
     } else {
       return styles.uncaughtContainer
@@ -110,7 +69,7 @@ export default class PokedexScreen extends Component {
   search (text) {
     text = text.toLowerCase()
     const render = []
-    this.state.pokemon.map(pokemon =>{
+    this.props.pokemon.pokemon.map(pokemon =>{
       const name = pokemon.name.toLowerCase()
       if (name.startsWith(text)) {
         render.push(pokemon)
@@ -124,12 +83,12 @@ export default class PokedexScreen extends Component {
     return (
       <View style={{flex:1}}>
         <Button
-          onPress={this.sortByName}
+          onPress={() => this.sortByName()}
           title='Sort By Name'
           style={styles.buttonLeft}
         />
         <Button
-          onPress={this.sortByNum}
+          onPress={() => this.sortByNum()}
           title='Sort by Number'
           style={styles.buttonRight}
         />
@@ -161,3 +120,19 @@ export default class PokedexScreen extends Component {
       </View>
     )}
 }
+
+const mapState = state => {
+  return {
+    pokemon: state.pokemon,
+    caught: state.caught
+  }
+}
+
+const mapDispatch = dispatch => {
+  return {
+    fetchPokemon: () => dispatch(getPokemon()),
+    fetchCaught: (user) => dispatch(getCaught(user))
+  }
+}
+
+export default connect(mapState, mapDispatch)(PokedexScreen)
