@@ -53,7 +53,7 @@ export default StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: 16
+    fontSize: 16,
   },
   listContainer: {
     marginTop: 20,
@@ -74,6 +74,16 @@ export default StyleSheet.create({
   },
   entityText: {
     fontSize: 20,
-    color: '#333333'
+    color: '#333333',
+    fontFamily: 'PokemonGB'
+  },
+  caughtImage: {
+    width: 100,
+    height: 100
+  },
+  uncaughtImage: {
+    width: 100,
+    height: 100,
+    tintColor: 'gray'
   }
 })

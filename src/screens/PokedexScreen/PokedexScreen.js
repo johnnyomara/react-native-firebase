@@ -10,7 +10,6 @@ export class PokedexScreen extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      // pokemon: [],
       renderedPokemon: [],
       user: this.props.extraData
     }
@@ -60,9 +59,9 @@ export class PokedexScreen extends Component {
   styleMe (pokemon) {
     pokemon = pokemon.toLowerCase()
     if (this.props.pokemon.caught[pokemon]) {
-      return styles.caughtContainer
+      return styles.caughtImage
     } else {
-      return styles.uncaughtContainer
+      return styles.uncaughtImage
     }
   }
 
@@ -97,12 +96,12 @@ export class PokedexScreen extends Component {
             {pokemon.map(pokemon => {
               return (
                 <TouchableOpacity key={pokemon.number}
-                  style={this.styleMe(pokemon.name)}
+                  style={styles.uncaughtContainer}
                   onPress={()=> this.handleCatch(pokemon.name)}>
                   <Text style={styles.entityText}>No. {pokemon.number}</Text>
                   <Text style={styles.entityText}>{pokemon.name}</Text>
                   <Image source={{uri: pokemon.image}}
-                    style={{width:50, height: 50}}/>
+                    style={this.styleMe(pokemon.name)}/>
                 </TouchableOpacity>
               )
             })}
